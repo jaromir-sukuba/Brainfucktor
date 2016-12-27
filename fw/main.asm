@@ -28,6 +28,8 @@
 	TMP0	
 	TMP1	
 	TMP2	
+	TMP3
+	TMP4
 	cursor	
 	flagvar1
 	keys_old
@@ -40,6 +42,7 @@
 	addrl_1
 	addrh_2
 	addrl_2
+	tbl_tmp
 	
 	variables_end
 	endc
@@ -47,13 +50,13 @@
 #define		var_len			variables_end-0
   
 #define		f_int_fin		flagvar1,0
-#define		f_shift			flagvar1,1
-#define		f_shift_old		flagvar1,2
+#define		f_invert		flagvar1,1
 #define		f_line			flagvar1,3
 #define		f_run			flagvar1,4
 #define		f_step			flagvar1,5
 #define		f_clean			flagvar1,6
-  
+#define		f_disp_half		flagvar1,7
+	
 #define		input_buff		0x40
 #define		stack_buff		0x80
 #define		out_buff		0xD0
@@ -63,25 +66,101 @@
 
 #define		LCD_PORT		LATA
 #define		LCD_TRIS		TRISA
-#define		LCD_RS			LATB,5
-#define		LCD_RS_T		TRISB,5
-#define		LCD_RS_I		PORTB,5
-#define		LCD_EN			LATB,4
+#define		LCD_A0			LATC,0
+#define		LCD_A0_T		TRISC,0
+#define		LCD_A0_I		PORTC,0
+#define		LCD_RST			LATC,1
+#define		LCD_E1			LATC,2
+#define		LCD_E0			LATC,3
+#define		LCD_RW			LATC,4
   
-#define		LEDY			LATC,1
-#define		LEDR			LATC,2
+#define		LEDG			LATB,2
+	
+#define		DISP_HALFWIDTH	.12
  
+	
+#define		TEST_INPUT		1	
 
     org	    0x0000
 	bra		main
-src1
-    db	   "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>."
-	db		0x00
+
+tbl_vectors
+	db	0x00,0x49,0x09,0x01
+	db	0x70,0x08,0x40,0x41
+	db	0x3E,0x7F,0x22,0x14
+	db	0x45,0x4F,0x06,0x30
+tbl_charmap
+	db	0x00,0x00	;0x20 ' '
+	db	0x00,0xD0	;0x21 !
+	db	0x0E,0x0E	;0x22 "
+	db	0x9A,0x9A	;0x23 #
+	db	0x0E,0x1F	;0x24 $
+	db	0x00,0x00	;0x25 % - undefined
+	db	0x00,0x00	;0x26 & - undefined
+	db	0x00,0xE0	;0x27 '
+	db	0x08,0x77	;0x28 (
+	db	0x07,0x78	;0x29 )
+	db	0x0B,0x8B	;0x2A *
+	db	0x05,0x85	;0x2B +
+	db	0x06,0xF0	;0x2C ,
+	db	0x05,0x55	;0x2D -
+	db	0x0F,0xF0	;0x2E .
+	db	0x06,0x83	;0x2F /
+	db	0x81,0xC8	;0x30 0
+	db	0x0E,0x90	;0x31 1
+	db	0x41,0xCE	;0x32 2
+	db	0x07,0x1B	;0x33 3
+	db	0xE5,0x59	;0x34 4
+	db	0x0D,0x1D	;0x35 5
+	db	0x08,0x14	;0x36 6 
+	db	0x03,0x39	;0x37 7
+	db	0x81,0x18	;0x38 8 
+	db	0xE1,0x18	;0x39 9 
+	db	0x0B,0x00	;0x3A :
+	db	0x0F,0xB0	;0x3B ;
+	db	0x5B,0xA7	;0x3C <
+	db	0x0B,0xBB	;0x3D =
+	db	0x7A,0xB5	;0x3E >	
+	db	0x0C,0xE0	;0x3F ?
+	db	0x87,0x1D	;0x40 @
+	db	0x92,0x29	;0x41 A
+	db	0x91,0x1A	;0x42 B
+	db	0x87,0x7A	;0x43 C
+	db	0x97,0x78	;0x44 D
+	db	0x91,0x11	;0x45 E
+	db	0x92,0x23	;0x46 F
+	db	0x87,0x1F	;0x47 G
+	db	0x95,0x59	;0x48 H
+	db	0x00,0x90	;0x49 I
+	db	0xF6,0x79	;0x4A J
+	db	0x9B,0xA7	;0x4B K
+	db	0x96,0x60	;0x4C L
+	db	0x9E,0xE9	;0x4D M
+	db	0x9E,0x59	;0x4E N
+	db	0x87,0x78	;0x4F O
+	db	0x92,0x2E	;0x50 P
+	db	0x87,0x86	;0x51 Q
+	db	0x92,0xB6	;0x52 R
+	db	0xE1,0x1F	;0x53 S
+	db	0x39,0x30	;0x54 T
+	db	0x86,0x68	;0x55 U
+	db	0xE5,0xF9	;0x56 V
+	db	0x9F,0xF9	;0x57 W
+	db	0xA5,0x5A	;0x58 X
+	db	0xE4,0xE0	;0x59 Y
+	db	0x71,0xC7	;0x5A Z
+	db	0x07,0x79	;0x5B [
+	db	0x03,0x86	;0x5C \
+	db	0x09,0x77	;0x5D ]
+	db	0x0E,0x3E	;0x5E ^
+	db	0x06,0x66	;0x5F _
+
+#ifdef	TEST_INPUT	
 src2
-    db	   ",[.,]"
+    db	   ",[.,]abcdefghijklmnopqr"
 	db		0x00
 inp    
-	db	   "Test input"
+	db	   "TEST INPUT"
 	db		0x00
 
 tblcpy_rout
@@ -92,6 +171,8 @@ copy_loop1
 	tstfsz	TABLAT
 	bra		copy_loop1
 	return
+
+#endif	
 	
 main
 	lfsr	1,0
@@ -99,41 +180,38 @@ main
 	clrf	POSTINC1
 	decfsz	WREG
 	bra		$-4
-	clrf	TRISA
 	movlb	.15
 	clrf	ANSELA,BANKED
 	clrf	ANSELB,BANKED
-	movlw	0x02
-	movwf	TRISB
+	clrf	TRISA
+	clrf	TRISB
+	clrf	TRISC	
 	movlw	0xC7
 	movwf	T0CON
 	movlw	0x70
 	movwf	OSCCON
-
+	
+#ifdef	TEST_INPUT
 	clrf   TBLPTRH
 	lfsr	1,program_buff		;program
-	movlw   LOW src1
-	btfsc	LCD_RS_I
 	movlw   LOW src2
 	rcall	tblcpy_rout
 	
 	lfsr	1,input_buff
 	movlw   LOW inp
-	rcall	tblcpy_rout
-	
-	clrf	TRISC	
-	movlw	.20
+	rcall	tblcpy_rout	
+#endif	
+
+	clrf	LATC
+	movlw	.10
 	rcall	dly_nms
-	movlw	0x38
-	rcall	lcd_cmd
-	movlw	0x0F
-	rcall	lcd_cmd
-	movlw	0x01
-	rcall	lcd_cmd
-	rcall	dly_4ms
-	movlw	0x02
-	rcall	lcd_cmd
-	rcall	dly_4ms
+	bsf		LCD_RST
+
+	movlw	0xAF
+	rcall	disp_cmd
+	bsf		f_disp_half
+	rcall	disp_cmd
+	
 	
 	lfsr	1,out_buff
 	movlw	out_buff_len
@@ -152,18 +230,14 @@ temp_loop
 	rcall	keys_check
 	rcall	editor
 
-	bcf		LEDY
-	btfsc	f_shift
-	bsf		LEDY
-
 	btfss	f_run
 	bra		n_run
 	bcf		f_run
 	rcall	int_init
 n_run	
-	bcf		LEDR
+	bcf		LEDG
 	btfss	f_int_fin
-	bsf		LEDR
+	bsf		LEDG
 
 	bra		temp_loop
 	
@@ -185,59 +259,7 @@ editor_line1
 	movf	addrh_2,W
 	addwfc	FSR2H,f	
 editor_lineend	
-	btfss	f_shift
-	bra		editor_normal
-	movlw	.0
-	btfss	keys,0
-	bra		editor_d1
-	movlw	'<'
-editor_d1	
-	btfss	keys,1
-	bra		editor_d2
-	movlw	'>'
-editor_d2	
-	btfss	keys,2
-	bra		editor_d3
-	movlw	'+'
-editor_d3
-	btfss	keys,3
-	bra		editor_d4
-	movlw	'-'
-editor_d4
-	btfss	keys,4
-	bra		editor_d5
-	movlw	'.'
-editor_d5
-	btfss	keys,5
-	bra		editor_d6
-	movlw	','
-editor_d6
-	btfss	keys,6
-	bra		editor_d7
-	movlw	'['
-editor_d7
-	btfss	keys,7
-	bra		editor_d8
-	movlw	']'
-editor_d8
-	clrf	keys
-	andlw	0xFF
-	bz		editor_end
-	movwf	INDF2
-	btfsc	f_line
-	bra		editor_d_l
-	incf	addrl_1
-	btfsc	STATUS,C
-	incf	addrh_1
-	bra		editor_1
-editor_d_l
-	incf	addrl_2
-	btfsc	STATUS,C
-	incf	addrh_2	
-	
-	bra		editor_end
-	
-editor_normal	
+
 	btfss	keys,4
 	bra		editor_1
 	btfsc	f_line
@@ -319,19 +341,9 @@ editor_end
 	return
 	
 keys_check
-	bsf		LCD_RS_T
 	setf	LCD_TRIS
 	movlw	.50
 	rcall	dly_n10us
-	btfsc	LCD_RS_I
-	bra		keys_check_no_rs
-	btfss	f_shift_old
-	bra		keys_check_no_rs
-	btg		f_shift
-keys_check_no_rs	
-	bcf		f_shift_old
-	btfsc	LCD_RS_I
-	bsf		f_shift_old
 	comf	PORTA,W
 	movwf	keys_new
 	xorwf	keys_old,W
@@ -339,7 +351,6 @@ keys_check_no_rs
 	iorwf	keys,f
 	movff	keys_new,keys_old
 	clrf	LCD_TRIS
-	bcf		LCD_RS_T
 	return
 	
 int_init
@@ -475,11 +486,10 @@ int_4_e
 lcd_print_h8
 	movwf	TMP2
 	swapf	TMP2,W
-	andlw	0x0F
 	rcall	lcd_print_h4
 	movf	TMP2,W
-	andlw	0x0F
 lcd_print_h4
+	andlw	0x0F
 	addlw	0-D'10'			; test: Is W < 10 ?
 	btfsc	STATUS,C		; If 0 <= W <= 9, skip ahead
 	addlw	'A'-'0'-D'10'	; If A <= W <= F, add ASCII char 'A', and
@@ -487,21 +497,75 @@ lcd_print_h4
 							; line have no effect
 	addlw	'0'+D'10'		; Add ASCII character '0' as well as
 							; replace the original 10 that was subtracted	
-lcd_data
-	bsf		LCD_RS
-	bra		lcd_put_word
-lcd_cmd
-	bcf		LCD_RS
-lcd_put_word
-	movwf	LCD_PORT
-	bsf		LCD_EN	
-	bra		$+2
-	bcf		LCD_EN	
-	rcall	dly_40us
-	return
+					
+lcd_char	
+	movwf	TMP4
+	movlw	0x20
+	cpfslt	TMP4
+	bra		char_gt_0x20
+	movlw	.0
+	bra		lcd_char_now
+char_gt_0x20
+	movlw	0x60
+	cpfslt	TMP4
+	bra		char_gt_0x60
+	movf	TMP4,W
+	addlw	.256-0x20
+	bra		lcd_char_now
+char_gt_0x60	
+	movf	TMP4,W
+	addlw	.256-0x40
+lcd_char_now
+	andlw	0x3F
+	rlncf	WREG,f
+	addlw	tbl_charmap
+	movwf	TBLPTRL
+	clrf	TBLPTRH
+	rcall	lcd_char_t1
+	rcall	lcd_char_t2
+	rcall	lcd_char_t1
+	rcall	lcd_char_t2
+	movlw	.0
+	bra		disp_dat
 
-dly_40us
-	movlw	.4
+lcd_char_t1
+	tblrd*
+	swapf	TABLAT,W
+	bra		lcd_print_vector
+lcd_char_t2
+	tblrd*+
+	movf	TABLAT,W
+	bra		lcd_print_vector
+	
+lcd_print_vector
+	andlw	0x0F
+	movff	TBLPTRL,tbl_tmp
+	addlw	tbl_vectors
+	movwf	TBLPTRL
+	tblrd*+
+	movf	TABLAT,W
+	movff	tbl_tmp,TBLPTRL
+disp_dat
+	bsf		LCD_A0	
+	btfsc	f_invert
+	comf	WREG
+	bra		disp_proc
+disp_cmd
+	bcf		LCD_A0
+disp_proc
+	movwf	LCD_PORT
+	bcf		LCD_E0
+	bcf		LCD_E1
+;	nop
+	btfsc	f_disp_half
+	bsf		LCD_E0
+	btfss	f_disp_half
+	bsf		LCD_E1
+;	nop
+	bcf		LCD_E0
+	bcf		LCD_E1
+	return							
+
 dly_n10us
 	movwf	TMP1
 dly_10us_lop
@@ -513,8 +577,7 @@ dly_10us_lop
 	
 	return
 	
-dly_4ms
-	movlw	.4
+
 dly_nms
 	movwf	TMP2
 dly_ms_loop
@@ -530,71 +593,110 @@ dly_ms_loop
 		bra		dly_ms_loop
 	return
 
+disp_line
+	addlw	0xB8
+	rcall	disp_cmd
+	movlw	0x00
+	rcall	disp_cmd
+	return
 	
 display_refresh
 	movff	FSR2L,stackl_t
-	movlw	0x02
-	rcall	lcd_cmd
-	movlw	0x02
-	rcall	dly_nms
 
+	bcf		f_disp_half	
+	movlw	.0
+	rcall	disp_line
 	lfsr	2,program_buff
 	movf	addrl_1,W
+	rcall	disp_refresh_helper
+	rcall	disp_sr_l1
+
+	bsf		f_disp_half
+	movlw	.0
+	rcall	disp_line
+	movlw	.16-DISP_HALFWIDTH
+	rcall	disp_sr_noinit
+
+	movlw	' '
+	rcall	lcd_char
+	movlw	'P'
+	rcall	lcd_char
+	movf	block_1,W
+	rcall	lcd_print_h8	
+	
+	
+	bcf		f_disp_half	
+	movlw	.1
+	rcall	disp_line
+	lfsr	2,input_buff
+	movf	addrl_2,W
+	rcall	disp_refresh_helper
+	rcall	disp_sr_l2
+	
+	bsf		f_disp_half
+	movlw	.1
+	rcall	disp_line
+	movlw	.16-DISP_HALFWIDTH
+	rcall	disp_sr_noinit
+	movlw	' '
+	rcall	lcd_char
+	movlw	'I'
+	rcall	lcd_char
+	movf	block_2,W
+	rcall	lcd_print_h8
+
+	
+	bcf		f_disp_half	
+	movlw	.2
+	rcall	disp_line
+	lfsr	2,out_buff
+	movlw	DISP_HALFWIDTH
+	rcall	disp_sr_l3
+	
+	
+	movff	stackl_t,FSR2L
+	clrf	FSR2H
+
+	return
+	
+disp_refresh_helper
 	andlw	0xF0
 	addwf	FSR2L,f
 	movf	addrh_1,W
 	addwfc	FSR2H,f
-	movlw	.16
-	rcall	disp_sr
-	
-	lfsr	2,out_buff
-	movlw	.16
-	rcall	disp_sr
-
-	movlw	0xC0
-	rcall	lcd_cmd
-	
-	lfsr	2,input_buff
-	movf	addrl_2,W
-	andlw	0xF0
-	addwf	FSR2L,f
-	movf	addrh_2,W
-	addwfc	FSR2H,f
-
-	movlw	.16
-	rcall	disp_sr
-
-	movlw	'P'
-	rcall	lcd_data
-	movf	block_1,W
-	rcall	lcd_print_h8
-	movlw	' '
-	rcall	lcd_data
-	movlw	'I'
-	rcall	lcd_data
-	movf	block_2,W
-	rcall	lcd_print_h8
-	
-	movff	stackl_t,FSR2L
-	clrf	FSR2H
-	
-	movlw	0x80
-	btfsc	f_line	
-	iorlw	0x40
-	addwf	position,W
-	rcall	lcd_cmd
+	movlw	DISP_HALFWIDTH
 	return
-
-disp_sr
-	movwf	TMP2
+	
+disp_sr_l3
+	bsf		TMP3,7
+	bra		disp_sr_l_ok
+disp_sr_l2
+	clrf	TMP3
+	btfss	f_line
+	bsf		TMP3,7
+	bra		disp_sr_l_ok
+disp_sr_l1
+	clrf	TMP3
+	btfsc	f_line
+	bsf		TMP3,7
+disp_sr_l_ok
 	bcf		f_clean
+disp_sr_noinit
+	movwf	TMP2
 disp_l1
+	movf	TMP3,W
+	subwf	position,W
+	bnz		disp_sr_nz
+	bsf		f_invert
+disp_sr_nz
+	incf	TMP3
 	movf	POSTINC2,W
 	btfsc	STATUS,Z
 	bsf		f_clean
 	btfsc	f_clean
 	movlw	' '
-	rcall	lcd_data
+	rcall	lcd_char
+	bcf		f_invert
 	decfsz	TMP2
 	bra		disp_l1
 	return
