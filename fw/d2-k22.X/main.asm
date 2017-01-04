@@ -1,5 +1,8 @@
 #include "p18f26k22.inc"
+
 	
+; leave this define commented for 1kB contest!!!!
+; uncomment if you want helper sample BF program preloaded
 ;#define		TEST_INPUT		1		
 	
 #define		var_len			variables_end-0
