@@ -1,4 +1,31 @@
 #include "p18f26k22.inc"
+	
+;#define		TEST_INPUT		1		
+	
+#define		var_len			variables_end-0
+  
+#define		f_int_fin		flagvar1,0
+#define		f_invert		flagvar1,1
+#define		f_line			flagvar1,3
+#define		f_run			flagvar1,4
+#define		f_step			flagvar1,5
+#define		f_clean			flagvar1,6
+#define		f_disp_half		flagvar1,7
+	
+#define		LCD_PORT		LATA
+#define		LCD_TRIS		TRISA
+#define		LCD_A0			LATC,0
+#define		LCD_A0_T		TRISC,0
+#define		LCD_A0_I		PORTC,0
+#define		LCD_RST			LATC,1
+#define		LCD_E1			LATC,2
+#define		LCD_E0			LATC,3
+#define		LCD_RW			LATC,4
+#define		LEDG			LATC,5
+	
+#define		DISP_HALFWIDTH	.12
+
+	
   CONFIG  FOSC = INTIO67        ; Oscillator Selection bits (Internal oscillator block)
   CONFIG  PLLCFG = OFF          ; 4X PLL Enable (Oscillator used directly)
   CONFIG  PRICLKEN = ON         ; Primary clock enable bit (Primary clock enabled)
@@ -45,42 +72,16 @@
 	tbl_tmp
 	
 	variables_end
-	endc
+	endc	
 
-#define		var_len			variables_end-0
-  
-#define		f_int_fin		flagvar1,0
-#define		f_invert		flagvar1,1
-#define		f_line			flagvar1,3
-#define		f_run			flagvar1,4
-#define		f_step			flagvar1,5
-#define		f_clean			flagvar1,6
-#define		f_disp_half		flagvar1,7
-	
-#define		input_buff		0x40
-#define		stack_buff		0x80
-#define		out_buff		0xD0
+#define		input_buff		0x040
+#define		stack_buff		0x080
+#define		out_buff		0x0D0
 #define		out_buff_len	program_buff-out_buff
-#define		program_buff	0xE0	
-#define		array_buff		0xB00
-
-#define		LCD_PORT		LATA
-#define		LCD_TRIS		TRISA
-#define		LCD_A0			LATC,0
-#define		LCD_A0_T		TRISC,0
-#define		LCD_A0_I		PORTC,0
-#define		LCD_RST			LATC,1
-#define		LCD_E1			LATC,2
-#define		LCD_E0			LATC,3
-#define		LCD_RW			LATC,4
-  
-#define		LEDG			LATB,2
+#define		program_buff	0x0E0	
+#define		array_buff		0xB00	
 	
-#define		DISP_HALFWIDTH	.12
- 
 	
-#define		TEST_INPUT		1	
-
     org	    0x0000
 	bra		main
 
@@ -157,7 +158,7 @@ tbl_charmap
 
 #ifdef	TEST_INPUT	
 src2
-    db	   ",[.,]abcdefghijklmnopqr"
+    db	   ",[.,]"
 	db		0x00
 inp    
 	db	   "TEST INPUT"
@@ -172,19 +173,20 @@ copy_loop1
 	bra		copy_loop1
 	return
 
-#endif	
+#endif
 	
+
 main
-	lfsr	1,0
-	movlw	var_len
+;	lfsr	1,0
+	clrf	FSR1L
+	movlw	0xFF
 	clrf	POSTINC1
 	decfsz	WREG
 	bra		$-4
+
 	movlb	.15
 	clrf	ANSELA,BANKED
-	clrf	ANSELB,BANKED
 	clrf	TRISA
-	clrf	TRISB
 	clrf	TRISC	
 	movlw	0xC7
 	movwf	T0CON
@@ -212,19 +214,10 @@ main
 	bsf		f_disp_half
 	rcall	disp_cmd
 	
-	
-	lfsr	1,out_buff
-	movlw	out_buff_len
-	clrf	POSTINC1
-	decfsz	WREG
-	bra		$-4	
-	
-;	rcall	int_init
-	
-temp_loop
+main_loop
 	rcall	int_execute
 	btfss	INTCON,TMR0IF
-	bra		temp_loop
+	bra		main_loop
 	bcf		INTCON,TMR0IF
 	rcall	display_refresh
 	rcall	keys_check
@@ -239,7 +232,7 @@ n_run
 	btfss	f_int_fin
 	bsf		LEDG
 
-	bra		temp_loop
+	bra		main_loop
 	
 editor
 	movff	FSR2L,stackl_t
@@ -260,7 +253,7 @@ editor_line1
 	addwfc	FSR2H,f	
 editor_lineend	
 
-	btfss	keys,4
+	btfss	keys,0
 	bra		editor_1
 	btfsc	f_line
 	bra		editor_0_l1
@@ -273,7 +266,7 @@ editor_0_l1
 	btfsc	STATUS,C
 	incf	addrh_2	
 editor_1
-	btfss	keys,5
+	btfss	keys,4
 	bra		editor_2
 	btfsc	f_line
 	bra		editor_1_l1
@@ -286,11 +279,11 @@ editor_1_l1
 	btfss	STATUS,C
 	decf	addrh_2	
 editor_2
-	btfss	keys,0
+	btfss	keys,1
 	bra		editor_3
 	incf	INDF2
 editor_3	
-	btfss	keys,1
+	btfss	keys,5
 	bra		editor_4
 	decf	INDF2
 editor_4	
@@ -299,16 +292,16 @@ editor_4
 	movlw	.8
 	addwf	INDF2,f
 editor_5	
-	btfss	keys,3
+	btfss	keys,7
 	bra		editor_6
 	movlw	.256-.8
 	addwf	INDF2,f
 editor_6		
-	btfss	keys,7
+	btfss	keys,6
 	bra		editor_7
 	bsf		f_run
 editor_7	
-	btfss	keys,6
+	btfss	keys,3
 	bra		editor_8
 	btg		f_line
 editor_8
@@ -367,7 +360,7 @@ int_init_getlen
 	movlw	input_buff
 	movwf	input_p
 	lfsr	1,array_buff
-	movlw	.255
+	movlw	.0
 	clrf	POSTINC1
 	decfsz	WREG
 	bra		$-4
@@ -376,6 +369,7 @@ int_init_getlen
 	lfsr	2,stack_buff		;stack
 	bcf		f_int_fin	
 	return
+	
 int_execute
 	btfsc	f_int_fin
 	return
@@ -535,7 +529,8 @@ lcd_char_t1
 lcd_char_t2
 	tblrd*+
 	movf	TABLAT,W
-	bra		lcd_print_vector
+;	bra		lcd_print_vector
+; falldown
 	
 lcd_print_vector
 	andlw	0x0F
@@ -598,7 +593,18 @@ disp_line
 	rcall	disp_cmd
 	movlw	0x00
 	rcall	disp_cmd
-	return
+	rcall	clr_disp_line
+	movlw	0x00
+	bra		disp_cmd
+
+clr_disp_line
+	movlw	.61
+clr_lp
+	movlw	0
+	rcall	disp_dat	
+	decfsz	TMP0
+	bra		clr_lp
+	return	
 	
 display_refresh
 	movff	FSR2L,stackl_t
@@ -644,6 +650,8 @@ display_refresh
 	rcall	lcd_char
 	movf	block_2,W
 	rcall	lcd_print_h8
+	movlw	.2
+	rcall	disp_line
 
 	
 	bcf		f_disp_half	
@@ -652,7 +660,7 @@ display_refresh
 	lfsr	2,out_buff
 	movlw	DISP_HALFWIDTH
 	rcall	disp_sr_l3
-	
+
 	
 	movff	stackl_t,FSR2L
 	clrf	FSR2H
